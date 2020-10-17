@@ -1,18 +1,31 @@
-var responseContent = "<html>" +
-  "<body>" +
-  "<style>" +
-  "body {text-align: center; background-color: #333; color: #eee;}" +
-  "</style>" +
-  "<h1>Gotham Imperial Hotel</h1>" +
-  "<p>There seems to be a problem with your connection.</p>" +
-  "<p>Come visit us at 1 Imperial Plaza, Gotham City for free WiFi.</p>" +
-  "</body>" +
-  "</html>";
+const CACHE_NAME = "gih-cache";
+const CACHED_URLS = [
+  "/index-offline.html",
+  "/css/gih-offline.css",
+  "/img/jumbo-background-sm.jpg",
+  "/img/logo-header.png",
+];
 
-self.addEventListener("fetch", function(event) {
+self.addEventListener("install", (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(CACHED_URLS))
+  );
+});
+
+self.addEventListener("fetch", function (event) {
   event.respondWith(
-    fetch(event.request).catch(function() {
-      return new Response(responseContent, {headers: {"Content-Type": "text/html"}});
-    })
+    fetch(event.request).catch(() =>
+      caches //
+        .match(event.request)
+        .then((response) => {
+          if (response) {
+            return response;
+          } else if (
+            event.request.headers.get("accept").includes("text/html")
+          ) {
+            return caches.match("/index-offline.html");
+          }
+        })
+    )
   );
 });
